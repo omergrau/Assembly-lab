@@ -1,0 +1,54 @@
+#include "msp430g2553.h" // #include <msp430.h> - can be used as well
+#define   SWstate &P1IN
+;===============================================================================
+;                          Creating Main pre_lab3
+;===============================================================================
+             NAME   Main
+             PUBLIC Main
+             EXTERN First_SW, Second_SW, Third_SW, Fifth_SW
+             EXTERN Else_SW, Delay
+;===============================================================================
+             RSEG    CSTACK                   ; Begins a relocatable segment name of CSTACK - Define stack segment
+;===============================================================================
+             RSEG    CODE                     ; Assemble to Flash memory -like void main in C
+;===============================================================================
+Main         MOV.W   #SFE(CSTACK),SP          ; Initialize stackpointer
+StopWDT      MOV.W   #WDTPW+WDTHOLD,&WDTCTL   ; Stop WDT, turning off the watchdog
+SetupP1      MOV.B   #0x80,&P1DIR             ; Our input - p1 pins is input ( input as 0 )
+SetupP2      BIS.B   #0xFF,&P2DIR             ; P2 output - TURN ON output in all pins ( output as 1 )
+             BIC.B   #0xC0,&P2SEL             ; only for "msp430g2553"                                ; for P2.6,P2.7 to be GPIO
+             MOV.B   #0x00,&P2OUT             ; put 0 on all pins                      
+;===============================================================================
+;                      $$$  SWstate goes to choosing  $$$
+;===============================================================================
+             
+Choose       MOV.B    SWstate, R4
+             AND      #0x0F, R4
+             CMP      #0x01, R4
+             JZ       Choose_1                ; SWstate is 0x01
+             CMP.B    #0x02, R4
+             JZ       Choose_2
+             CMP.B    #0x04, R4
+             JZ       Choose_3
+             CMP.B    #0x05, R4
+             JZ       Choose_5
+             JMP      Choose_4                ; SWstate not 0x04, 0x02, 0x01
+;===============================================================================
+;                        $$$ Decides where to go $$$ 
+;===============================================================================
+Choose_1      CALL #First_SW
+Choose_2      CALL #Second_SW
+Choose_3      CALL #Third_SW
+Choose_4      CALL #Else_SW
+Choose_5      CALL #Fifth_SW
+
+              JMP Choose
+              NOP
+;===============================================================================
+;            Interrupt Vectors
+;===============================================================================
+             COMMON  INTVEC                    ; Interrupt Vectors-Begins a common segment with name of INTVEC 
+;===============================================================================
+             ORG     RESET_VECTOR              ; MSP430 RESET Vector
+             DW      Main                   
+             END

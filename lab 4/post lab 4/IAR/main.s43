@@ -1,0 +1,54 @@
+#include  "bsp.h"
+;===============================================================================
+;             Defining module MAIN
+;=============================================================================== 
+             NAME    MAIN
+             PUBLIC  state,main
+             EXTERN  SysConfig,ClrLEDs,DecLED,Shift_L,Scope_Gen,PrintStr
+             EXTERN  PrintLEDs            
+;===============================================================================
+             ORG     DataSegStart       ; Begins a DATA segment            
+state        DW      0                  ; state variable
+STRING       DB      "YAIRTAYRI" 
+;===============================================================================
+             ORG     CodeSegStart       ; Program Reset = Begins a CODE segment
+             
+main         MOV.W   #StackTosStart,SP  ; Initialize stack pointer to the RAM end 
+             CALL    #SysConfig
+             CLR     state              ; set to idle state at the beginning
+             MOV.B   #0x01, R10         ; Register for Shift left - state2                
+             MOV.B   #0xFF , R9         ; Register for decreasing
+;===============================================================================
+;                       FSM_Loop
+;===============================================================================             
+state0       CMP     #0x00,state        ; check if state0           
+             JNZ     state1 
+             CLR.B   LEDsArrPort
+             BIS.W   #CPUOFF+GIE,SR 
+;----------------------------------------------------------------------------- 
+state1       CMP     #0x01,state        ; Check if state1   
+             JNZ     state2  
+             CALL    #DecLED               
+             MOV.B   #0x00, state
+;----------------------------------------------------------------------------- 
+state2       CMP.B   #0x02,state        ; Check if state 2
+             JNZ     state3          
+             CALL    #Shift_L             
+             MOV.B   #0x00, state
+;-----------------------------------------------------------------------------                  
+state3       CMP     #0x03, state       ; Check if state 3
+             JNZ     state4
+State_T      CALL    #Scope_Gen             
+             JNZ     State_T       
+             JMP     state3
+;----------------------------------------------------------------------------- 
+state4       CMP     #0x04, state
+             JNZ     state0
+             PUSH    #250
+             PUSH    #STRING
+             CALL    #PrintStr            
+             MOV.B   #0x00, state
+;===============================================================================
+             END
+;===============================================================================                                                                  
+

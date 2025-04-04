@@ -1,0 +1,102 @@
+#include  "bsp.h"
+;===============================================================================    
+;             Defining module HAL
+;===============================================================================    
+              MODULE HAL
+              PUBLIC SysConfig,Print2LEDs,ClrLEDs,PBs_handler,Delayhalfsec, Delays2, Delays3,Delay_duty
+              EXTERN GPIOconfig
+              EXTERN state
+            
+              RSEG   CODE
+;===============================================================================    
+;             System Configuration  
+;===============================================================================    
+SysConfig     CALL #GPIOconfig
+              RET
+;===============================================================================    
+;Print LEDs - function only with argument (without return value)  
+;===============================================================================    
+Print2LEDs    POP   R4        ; save return address
+              POP   R5        ; get value to print
+               
+              MOV.B R5,LEDsArrPort ;function body
+              
+              PUSH.W  R4
+              RET
+;===============================================================================    
+;Clear LEDs - void function (without arguments and return value)
+;===============================================================================    
+ClrLEDs       CLR.B LEDsArrPort
+              RET                 
+;===============================================================================    
+;            PORT2 Interrupt Service Routine
+;===============================================================================    
+PBs_handler  BIT.B  #PB0,PBsArrIntPend   ;check if PB0 is pushed
+             JNZ    PB0sel 
+             BIT.B  #PB1,PBsArrIntPend   ;check if PB1 is pushed
+             JNZ    PB1sel
+             BIT.B  #PB2,PBsArrIntPend   ;check if PB2 is pushed
+             JNZ    PB2sel
+             RETI                ; interrupt hapened from another source
+             
+PB0sel       MOV    #1,state 
+             MOV    #PB0,R4     ; which IntPend to clear
+             JMP    exitLPM0
+PB1sel       MOV    #2,state
+             MOV    #PB1,R4     ; which IntPend to clear
+             JMP    exitLPM0
+PB2sel       MOV    #3,state    ; idle state
+             MOV    #PB2,R4     ; which IntPend to clear
+
+exitLPM0     BIC    #CPUOFF,0(SP)  ; Exit LMP0
+             BIC.B  R4,PBsArrIntPend  
+             RETI
+;=============================================================================== 
+;             Half a second delay
+;=============================================================================== 
+Delay100us    MOV.W   #33,R7          
+L1            DEC.W   R7           
+              JNZ     L1                                    
+              RET                  
+            
+Delayhalfsec  MOV.W   #5000,R8              
+L2            CALL    #Delay100us
+              DEC.W   R8                     
+              JNZ     L2                                    
+              RET
+;===============================================================================
+;             Delay for 50% Duty Cycle
+;=============================================================================== 
+Delays1       MOV     #0x05, R7  
+L11           INC.W    R7
+              DECD.W   R7
+              JNZ     L11
+              RET                  
+            
+Delays2       MOV.W   #0x09,R8  
+L22           CALL    #Delays1
+              DEC.W     R8
+              JNZ     L22                                    
+              RET
+              
+Delays3       MOV     #64, R7  
+L13           INC.W    R7
+              DECD.W   R7
+              JNZ     L13
+              RET
+              
+Delay_duty    MOV     #3, R7  
+L14           DEC.W   R7
+              JNZ     L14
+              RET 
+;===============================================================================
+;             Delay for 25% Duty Cycle
+;===============================================================================               
+            
+;===============================================================================
+             ENDMOD                        ; End of module Hal
+;===============================================================================                         
+             END
+
+
+ 

@@ -1,0 +1,40 @@
+#include  "bsp.h"
+;===============================================================================    
+;           Defining module BSP
+;===============================================================================    
+            MODULE BSP
+            PUBLIC GPIOconfig
+            EXTERN main,PBs_handler
+            
+            RSEG   CODE     
+;===============================================================================
+;                GPIO congiguration
+;===============================================================================             
+GPIOconfig   MOV.W   #WDTPW+WDTHOLD,&WDTCTL   ; hold watchdog timer
+            ; PushButtons Setup
+             BIC.B   #0x0F,PBsArrPortSel
+             BIC.B   #0x80,PBsArrPortSel   
+             BIC.B   #0x0F,PBsArrPortDir
+             BIS.B   #0x80,PBsArrPortDir      
+             BIS.B   #0x03,PBsArrIntEdgeSel   ; pull-up
+             BIC.B   #0x0C,PBsArrIntEdgeSel   ; pull-down
+             BIS.B   #0x07,PBsArrIntEn
+             BIC.B   #0x0F,PBsArrIntPend      ; clear pending interrupts
+
+             ; LEDs Setup
+             BIC.B   #0xFF,LEDsArrPortSel     ; GPIO capability
+             BIS.B   #0xFF,LEDsArrPortDir     ; output dir
+             CLR.B   LEDsArrPort              ; clear LEDs
+             
+             RET            
+;========================================================================================================                
+             COMMON  INTVEC                   ; Interrupt Vectors-Begins a common segment name of INTVEC 
+;========================================================================================================
+             ORG     PORT2_VECTOR             ;PORT2 Interrupt Vector
+             DW      PBs_handler              ; interrupt handler = ISR
+             ORG     RESET_VECTOR             ; MSP430 RESET Vector
+             DW      main  
+;===============================================================================             
+             ENDMOD                           ; End of module BSP
+;===============================================================================              
+             END

@@ -1,0 +1,124 @@
+#include "msp430g2553.h" // #include <msp430.h> - can be used as well
+;===============================================================================
+              ORG 0C000h
+;===============================================================================  
+              MODULE    PortLeds
+              PUBLIC    First_SW, Second_SW, Third_SW, Else_SW,Fifth_SW
+              EXTERN    Delay1sec, DelayQuater, DelayRealTime  
+              RSEG      CODE
+;===============================================================================
+;                         Module of Four SW
+;=============================================================================== 
+First_SW      MOV.W     #0, R4                  ; Counter from 0 to FF
+Loop_1        CMP.B     #0x01, &P1IN            ; Check switch if changed
+              JNZ       End_Cycle               ; exit if yes
+              MOV.B     R4, &P2OUT              ; Save value in output                 
+              CALL      #Delay1sec              ; Call delay
+              INC       R4                      
+              CMP       #0x100, R4              ; check If R4 reached FF
+              JLO       Loop_1                  ; R4 is lower than FF
+              JMP       Loop_1                  ; R4 is FF
+;===============================================================================               
+Second_SW     MOV.W     #0xFF, R4               ; Counter from FF to 0
+              MOV.B     #0x00, R5               ; Register to hold 0 for CMP
+Loop_2        CMP.B     #0x02, &P1IN            ; Check switch if changed
+              JNZ       End_Cycle               ; exit if yes
+              MOV.B     R4, &P2OUT              ; Save value in output
+              CALL      #Delay1sec              ; Call delay
+              DEC       R4                      
+              CMP       R4, R5                  ; check If R4 reached 0
+              JLO       Loop_2                  ; R4 is lower than FF   
+              JMP       Loop_2                  ; R4 is 0
+;===============================================================================
+Third_SW
+;             Scope PWM signal
+START        MOV.B    #0x80, &P1OUT
+             MOV.B    #3,R6
+             MOV.B    &P1IN, R4
+             AND      #0x0F, R4
+             CMP      #0x04, R4            ; Check switch if changed
+             JNZ      ENDL
+ClockOn      CALL     #DelayQuater
+             DEC      R6
+             JNZ      ClockOn
+             
+             MOV.B    #0x00, &P1OUT
+           
+ClockOff     CALL     #DelayQuater
+             JMP      START
+ENDL             RET    
+
+;===============================================================================  
+Fifth_SW
+                  
+START5       MOV.B    #0x00, &P1OUT
+             MOV.B    #3,R6
+             MOV.B    #1,R15
+             MOV.B    &P1IN, R4
+             AND      #0x0F, R4
+             CMP      #0x05, R4            ; Check switch if changed
+             JNZ      ENDL5
+ClockOn5     CALL     #DelayRealTime
+             DEC      R6
+             JNZ      ClockOn5
+             
+             MOV.B    #0x80, &P1OUT
+           
+ClockOff5    CALL     #DelayRealTime
+             DEC      R15
+             JNZ      ClockOff5
+             INC      R9
+             CMP      #17500,R9
+             JNZ      START5
+             CLR      R9 
+             CALL     #Delay1sec
+             CALL     #Fifth_SW
+ENDL5             RET    
+
+
+;=============================================================================== 
+Else_SW       MOV.B  #0x00, &P2OUT               ; Turning off the leds.
+              CMP.B  #0, &P1OUT
+              JGE    Finish
+              ADD.B  #0x80,&P1OUT
+Finish        RET  ; Exit Routine to Main
+;===============================================================================     
+End_Cycle     RET
+;===============================================================================
+              ENDMOD
+;-------------------------------------------------------------------------------
+;                   @@@@ END of module four SW @@@@
+;-------------------------------------------------------------------------------
+;=============================================================================== 
+              MODULE  Delay
+              PUBLIC  Delay100us, Delay1sec, DelayQuater,DelayRealTime
+              RSEG    CODE
+            
+Delay100us    MOV.W   #40,R7          
+L1            DEC.W   R7           
+              JNZ     L1                                    
+              RET                  
+            
+DelayRealTime MOV.W   #15,R7          
+L5            DEC.W   R7
+              JNZ     L5                                    
+              RET            
+Delay1sec     MOV.W   #10000,R8              
+L2            CALL    #Delay100us
+              DEC.W   R8                      
+              JNZ     L2                                    
+              RET
+              
+DelayQuater   MOV.W   #2,R13              
+L3            CALL    #Delay100us
+              DEC.W   R13                     
+              JNZ     L3
+              RET                  
+;===============================================================================             
+              ENDMOD                     
+;-------------------------------------------------------------------------------
+;                   @@@@ END of module delay @@@@
+;-------------------------------------------------------------------------------
+;=============================================================================== 
+              END
+;=============================================================================== 

@@ -1,0 +1,45 @@
+#include <msp430xG46x.h>         ; Define controlled include file
+
+        ORG 1100h
+Id1     DW      0,7,9,7,3,0,1,7 ; Array id1
+Id2     DW      2,2,4,8,0,9,7,1 ; Array id2
+SIZE    DW      9               ; Size is 8, assuming you want to iterate over all elements
+
+Identical_indices_amount DS16 8
+
+        RSEG CODE               ; ORG 0x3100 - place program in 'CODE' segment in Flash memory
+MAIN:   MOV   #Id1, R6          
+        MOV   #Id2, R7          
+        MOV.B SIZE, R8 
+        CLR   R13
+
+        MOV   #Identical_indices_amount,R12
+
+BIGLOOP:DEC   R8
+        CLR   R11
+        JZ    END_LOOP        
+        MOV   @R6+, R9          
+        MOV   @R7+, R10 
+        XOR   R9,R10
+SMALLLOOP:
+        RRA   R10
+        ADC   R11
+        CMP   #0,R10
+        JNZ   SMALLLOOP
+        MOV   #16,R13
+        SUB   R11,R13
+        MOV   R13,0(R12)
+        ADD   #2,R12
+        JMP   BIGLOOP
+END_LOOP
+        JMP $
+        
+FINISH  NOP
+                          ; Place for additional code if needed
+
+;-------------------------------------------------------------------------------
+COMMON  INTVEC                  ; Interrupt Vectors
+;-------------------------------------------------------------------------------
+ORG RESET_VECTOR                ; POR, ext. Reset
+DW  MAIN
+END

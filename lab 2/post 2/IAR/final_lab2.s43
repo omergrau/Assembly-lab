@@ -1,0 +1,52 @@
+#include <msp430xG46x.h>     ;define controlled include file
+
+         ORG 1100h
+IDYair   DW    0,7,9,7,3,0,1,8  
+IDOmer   DW    2,2,4,8,0,9,7,2	
+IDSize   DW    8  ;Array Size
+Parity1  DS16  8
+Parity2  DS16  8
+
+         RSEG   CSTACK      ; defines stack segment of 80 words (default)
+         RSEG   CODE        ; ORG 0x3100 - place program in 'CODE' segment in to Flash memory
+                              
+Main     MOV     #SFE(CSTACK),SP   ; Mov #0x3100,SP 
+         PUSH.W  #Parity2  
+         PUSH.W  IDSize ; Push ID Size
+         PUSH.W  #IDYair ; Push address of Yair array to sp
+         CALL    #ParityFunc
+         PUSH.W  #Parity1  
+         PUSH.W  IDSize ; Push ID Size
+         PUSH.W  #IDOmer ; Push address of Omer array to sp
+         
+
+         CALL  #ParityFunc   ; Call function
+         MOV   #SFE(CSTACK),SP   ; Clear SP
+L1       JMP   L1      
+;----------------------Functions-------------------------------------------------
+ParityFunc 
+
+         MOV  2(SP), R5  ; Pointer to ID 
+         MOV  4(SP), R6  ; Get loop length
+         MOV  6(SP), R7 ; Pointer to Parity
+         CLR  R8
+         CLR  R9 
+LOOP     MOV  @R5+,R8 
+         MOV  @R7+,R9
+         RRA  R8
+         JC   CHECK_ODD
+         MOV  #0,0(R7)
+         DEC  R6
+         JNZ  LOOP
+         JMP  FINISH
+CHECK_ODD MOV  #1,0(R7) 
+         DEC  R6
+         JNZ  LOOP
+FINISH
+         RET
+;-------------------------------------------------------------------------------
+         COMMON  INTVEC                  ; Interrupt Vectors
+;-------------------------------------------------------------------------------
+         ORG     RESET_VECTOR            ; POR, ext. Reset
+         DW      Main
+         END

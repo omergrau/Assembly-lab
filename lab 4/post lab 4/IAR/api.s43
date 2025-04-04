@@ -1,0 +1,92 @@
+#include  "bsp.h"
+;===============================================================================
+;             Defining module API
+;=============================================================================== 
+             MODULE API
+             PUBLIC Shift_L,DecLED, Scope_Gen,PrintStr
+             EXTERN Print2LEDs, Delayhalfsec
+             EXTERN Delays2, Delays3,Delay_duty,Delay250
+            
+             RSEG   CODE
+;===============================================================================
+;             LEDs Shift rotate
+;=============================================================================== 
+Shift_L      MOV.B    #0x0A, R11
+Shift_loop   MOV.B    R10, LEDsArrPort
+             DINT
+             CALL     #Delayhalfsec
+             EINT   
+             RLA      R10
+             CMP      #0x8A, R10
+             JGE      ENDLED
+             DEC      R11
+             JNZ      Shift_loop
+             RET
+ENDLED       MOV      #0x01, R10
+             JMP      Shift_loop
+             RET
+;===============================================================================
+;             LEDs Decrement counting
+;=============================================================================== 
+DecLED       MOV.B    #0x14, R11
+DecLoop      MOV.B    R9, LEDsArrPort
+             DINT
+             CALL     #Delayhalfsec
+             EINT
+             DEC.B    R9
+             DEC      R11
+             JNZ      DecLoop 
+             RET
+;===============================================================================
+;             Scope PWM signal
+;===============================================================================                   
+Scope_Gen    MOV      #0,R14
+LOOP         CMP      #0,R14
+             JNZ      NUMLOOP
+             MOV      #5000 ,R15
+             CMP      #0,R14
+             JZ       START
+NUMLOOP      MOV      #10000 ,R15    
+START        MOV.B    #0x80, PBsArrPortScope
+             DINT
+             CALL     #Delays3
+             CMP      #0,R14
+             JNZ      DOUBLELOOP1
+             CALL     #Delays3   
+DOUBLELOOP1  EINT
+             MOV.B    #0x00, PBsArrPortScope
+             DINT
+             CALL     #Delays3
+             CMP      #0,R14
+             JNZ      DOUBLELOOP2
+             CALL     #Delays3
+DOUBLELOOP2  EINT
+             DEC      R15
+             JNZ      START
+             CMP      #0,R14
+             JZ       SETMOD
+             MOV      #0,R14
+             JMP      LOOP
+SETMOD       MOV      #1,R14
+             JMP      LOOP
+FINISH       RET
+
+;===============================================================================
+PrintStr     DINT
+             POP      R14   ;CALL 
+             POP      R13   ;NAME
+             POP      R15   ;250
+STARTING     MOV.B    @R13+,R5            
+             MOV.B    R5,LEDsArrPort
+MAINLOOP     CALL     #Delay250
+             DEC      R15
+             JNZ      MAINLOOP
+             CMP      #0,R5
+             JNZ      STARTING
+             EINT
+             PUSH     R14
+FINISHPRINT  RET
+;===============================================================================
+             ENDMOD                 ; End of module API
+;===============================================================================                  
+             END
