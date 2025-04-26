@@ -3,7 +3,7 @@
         ORG 1100h
 Id1     DW      0,7,9,7,3,0,1,7 ; Array id1
 Id2     DW      2,2,4,8,0,9,7,1 ; Array id2
-SIZE    DW      9               ; Size is 8, assuming you want to iterate over all elements
+SIZE    DW      8               ; Size is 8, assuming you want to iterate over all elements
 
 Identical_indices_amount DS16 8
 
