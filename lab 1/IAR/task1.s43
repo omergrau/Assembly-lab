@@ -16,8 +16,8 @@ MAIN:   MOV   #Id1, R6
         MOV   #Identical_indices_amount,R12
 
 BIGLOOP:DEC   R8
-        CLR   R11
-        JZ    END_LOOP        
+        JZ    END_LOOP
+        CLR   R11  
         MOV   @R6+, R9          
         MOV   @R7+, R10 
         XOR   R9,R10
