@@ -41,4 +41,4 @@ The exercise of comparing the arrays clearly demonstrated these principles and p
 
 * Name 1: **Yair**
 * Name 2: **Omer**
-* Date of Execution: **02/05/2025**
+* Date of Execution: **February 2024**
